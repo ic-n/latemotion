@@ -1,0 +1,34 @@
+{
+    "plugins": [],
+    "printWidth": 240,
+    "experimentalTernaries": true,
+    "objectWrap": "collapse",
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": true,
+    "singleQuote": false,
+    "jsxSingleQuote": false,
+    "quoteProps": "as-needed",
+    "trailingComma": "all",
+    "bracketSpacing": true,
+    "bracketSameLine": true,
+    "arrowParens": "always",
+    "proseWrap": "never",
+    "htmlWhitespaceSensitivity": "css",
+    "endOfLine": "lf",
+    "overrides": [
+        {
+            "files": "*.astro",
+            "options": {
+                "parser": "astro"
+            }
+        },
+        {
+            "files": "*.sql",
+            "options": {
+                "language": "postgresql",
+                "keywordCase": "upper"
+            }
+        }
+    ]
+}

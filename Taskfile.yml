@@ -6,6 +6,11 @@ tasks:
     cmds:
       - cmd: pnpm start
 
+  open:
+    interactive: true
+    cmds:
+      - cmd: node src/main.ts open
+
   check:
     cmds:
       - cmd: pnpm check
