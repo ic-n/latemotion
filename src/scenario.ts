@@ -15,6 +15,12 @@ export class ScenarioRunner {
         move: (x: number, y: number): void => {
             this.steps.push({ label: `Move pointer to ${x}, ${y}`, run: async (_page, pointer) => pointer.move(x, y) });
         },
+        fadeIn: (): void => {
+            this.steps.push({ label: "Fade in pointer", run: async (_page, pointer) => pointer.fadeIn() });
+        },
+        fadeOut: (): void => {
+            this.steps.push({ label: "Fade out pointer", run: async (_page, pointer) => pointer.fadeOut() });
+        },
         goto: (selector: string): void => {
             this.steps.push({ label: `Move pointer to ${selector}`, run: async (_page, pointer) => pointer.goto(selector) });
         },

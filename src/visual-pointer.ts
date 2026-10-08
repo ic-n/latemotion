@@ -5,6 +5,18 @@ import type { Locator, Page } from "@playwright/test";
 const cursorPath = fileURLToPath(new URL("../assets/cursor.png", import.meta.url));
 const pointerPath = fileURLToPath(new URL("../assets/pointer.png", import.meta.url));
 
+function hideNativeCursor(): void {
+    const install = () => {
+        if (document.getElementById("latemotion-native-cursor")) return;
+        const style = document.createElement("style");
+        style.id = "latemotion-native-cursor";
+        style.textContent = "html, html * { cursor: none !important; }";
+        document.documentElement.append(style);
+    };
+    if (document.documentElement) install();
+    else document.addEventListener("DOMContentLoaded", install, { once: true });
+}
+
 type FocusState = {
     element: HTMLElement;
     animation: Animation;
@@ -19,6 +31,8 @@ export class VisualPointer {
     private readonly page: Page;
     private target: Locator | undefined;
     private position = { x: 0.5, y: 0.5 };
+    private visible = true;
+    private nativeCursorHidden = false;
     private readonly assets: Promise<{ cursor: string; pointer: string }>;
 
     constructor(page: Page) {
@@ -27,6 +41,13 @@ export class VisualPointer {
             cursor: `data:image/png;base64,${cursor.toString("base64")}`,
             pointer: `data:image/png;base64,${pointer.toString("base64")}`,
         }));
+    }
+
+    private async ensureNativeCursorHidden(): Promise<void> {
+        if (this.nativeCursorHidden) return;
+        await this.page.context().addInitScript(hideNativeCursor);
+        await this.page.evaluate(hideNativeCursor);
+        this.nativeCursorHidden = true;
     }
 
     private async clearFocus(): Promise<void> {
@@ -53,8 +74,10 @@ export class VisualPointer {
         if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= 1)) {
             throw new RangeError("Pointer coordinates must be between 0 and 1");
         }
+        await this.ensureNativeCursorHidden();
         await this.clearFocus();
         this.position = { x, y };
+        this.visible = true;
         this.target = undefined;
         const assets = await this.assets;
         await this.page.evaluate(
@@ -79,22 +102,73 @@ export class VisualPointer {
         if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= 1)) {
             throw new RangeError("Pointer coordinates must be between 0 and 1");
         }
-        await this.start(this.position.x, this.position.y);
-        await this.page.evaluate(async ({ x, y }) => {
-            const image = document.getElementById("latemotion-pointer") as HTMLImageElement;
+        await this.ensureNativeCursorHidden();
+        await this.clearFocus();
+        this.target = undefined;
+        const assets = await this.assets;
+        await this.page.evaluate(async ({ x, y, previousX, previousY, cursor, visible }) => {
+            let image = document.getElementById("latemotion-pointer") as HTMLImageElement | null;
+            if (!image) {
+                image = document.createElement("img");
+                image.id = "latemotion-pointer";
+                image.style.cssText = "position:fixed;z-index:2147483647;pointer-events:none;width:32px;height:44px;object-fit:contain;left:0;top:0;filter:drop-shadow(0 5px 6px rgb(0 0 0 / .35))";
+                image.style.transform = `translate3d(${previousX * innerWidth}px, ${previousY * innerHeight}px, 0)`;
+                document.documentElement.append(image);
+            }
+            image.getAnimations().forEach((animation) => animation.cancel());
+            image.src = cursor;
+            image.style.opacity = visible ? "1" : "0";
             const destination = `translate3d(${x * innerWidth}px, ${y * innerHeight}px, 0)`;
-            const travel = image.animate(
-                [{ transform: image.style.transform }, { transform: destination }],
-                { duration: 650, easing: "cubic-bezier(.65, 0, .35, 1)", fill: "forwards" },
-            );
-            await travel.finished;
+            if (visible) {
+                const travel = image.animate(
+                    [{ transform: image.style.transform }, { transform: destination }],
+                    { duration: 650, easing: "cubic-bezier(.65, 0, .35, 1)", fill: "forwards" },
+                );
+                await travel.finished;
+                image.style.transform = destination;
+                travel.cancel();
+            }
             image.style.transform = destination;
-            travel.cancel();
-        }, { x, y });
+        }, { x, y, previousX: this.position.x, previousY: this.position.y, cursor: assets.cursor, visible: this.visible });
         this.position = { x, y };
     }
 
+    async fadeOut(): Promise<void> {
+        await this.ensureNativeCursorHidden();
+        await this.page.evaluate(async () => {
+            const image = document.getElementById("latemotion-pointer");
+            if (!image) return;
+            image.getAnimations().forEach((animation) => animation.cancel());
+            await image.animate([{ opacity: getComputedStyle(image).opacity }, { opacity: 0 }], { duration: 300, fill: "forwards" }).finished;
+            image.style.opacity = "0";
+            image.getAnimations().forEach((animation) => animation.cancel());
+        });
+        this.visible = false;
+    }
+
+    async fadeIn(): Promise<void> {
+        await this.ensureNativeCursorHidden();
+        const assets = await this.assets;
+        await this.page.evaluate(async ({ x, y, cursor }) => {
+            let image = document.getElementById("latemotion-pointer") as HTMLImageElement | null;
+            if (!image) {
+                image = document.createElement("img");
+                image.id = "latemotion-pointer";
+                image.style.cssText = "position:fixed;z-index:2147483647;pointer-events:none;width:32px;height:44px;object-fit:contain;left:0;top:0;filter:drop-shadow(0 5px 6px rgb(0 0 0 / .35));opacity:0";
+                image.style.transform = `translate3d(${x * innerWidth}px, ${y * innerHeight}px, 0)`;
+                image.src = cursor;
+                document.documentElement.append(image);
+            }
+            image.getAnimations().forEach((animation) => animation.cancel());
+            await image.animate([{ opacity: getComputedStyle(image).opacity }, { opacity: 1 }], { duration: 300, fill: "forwards" }).finished;
+            image.style.opacity = "1";
+            image.getAnimations().forEach((animation) => animation.cancel());
+        }, { x: this.position.x, y: this.position.y, cursor: assets.cursor });
+        this.visible = true;
+    }
+
     async goto(selector: string): Promise<void> {
+        await this.ensureNativeCursorHidden();
         const locator = this.page.locator(selector).filter({ visible: true }).first();
         await locator.scrollIntoViewIfNeeded();
         const bounds = await locator.boundingBox();
@@ -104,7 +178,7 @@ export class VisualPointer {
         await this.clearFocus();
         const assets = await this.assets;
         await this.page.evaluate(
-            async ({ x, y, previousX, previousY, cursor, pointer }) => {
+            async ({ x, y, previousX, previousY, cursor, pointer, visible }) => {
                 let image = document.getElementById("latemotion-pointer") as HTMLImageElement | null;
                 if (!image) {
                     image = document.createElement("img");
@@ -115,19 +189,23 @@ export class VisualPointer {
                 }
                 image.getAnimations().forEach((animation) => animation.cancel());
                 image.src = cursor;
-                image.style.opacity = "1";
-                const travel = image.animate(
-                    [{ transform: image.style.transform }, { transform: `translate3d(${x}px, ${y}px, 0)` }],
-                    { duration: 650, easing: "cubic-bezier(.65, 0, .35, 1)", fill: "forwards" },
-                );
-                await travel.finished;
-                image.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-                travel.cancel();
+                image.style.opacity = visible ? "1" : "0";
+                const destination = `translate3d(${x}px, ${y}px, 0)`;
+                if (visible) {
+                    const travel = image.animate(
+                        [{ transform: image.style.transform }, { transform: destination }],
+                        { duration: 650, easing: "cubic-bezier(.65, 0, .35, 1)", fill: "forwards" },
+                    );
+                    await travel.finished;
+                    image.style.transform = destination;
+                    travel.cancel();
+                } else {
+                    image.style.transform = destination;
+                }
                 image.src = pointer;
             },
-            { x, y, previousX: this.position.x, previousY: this.position.y, ...assets },
+            { x, y, previousX: this.position.x, previousY: this.position.y, visible: this.visible, ...assets },
         );
-        await locator.hover();
         await locator.evaluate(async (element) => {
             if (!(element instanceof HTMLElement)) throw new Error("Pointer focus requires an HTML element");
             const rect = element.getBoundingClientRect();
