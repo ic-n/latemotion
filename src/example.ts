@@ -12,4 +12,9 @@ export const scenario: Scenario = (r) => {
     r.pointer.goto('a[href="/about/"]');
     r.pointer.click();
     r.wait(2000);
+    r.pointer.move(0.85, 0.5);
+    r.scroll.intoView("footer", 1);
+    r.wait(1000);
+    r.scroll.intoView("header", 0);
+    r.wait(1000);
 };
