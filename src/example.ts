@@ -8,9 +8,7 @@ export const before = async (page: Page) => {
 
 export const scenario: Scenario = (r) => {
     r.wait(500);
-    r.pointer.fadeOut();
     r.pointer.start(0.5, 0.5);
-    r.pointer.fadeIn();
     r.pointer.goto('a[href="/about/"]');
     r.pointer.click();
     r.pointer.fadeOut();

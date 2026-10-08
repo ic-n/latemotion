@@ -255,7 +255,7 @@ export class VisualPointer {
                 const image = document.getElementById("latemotion-pointer");
                 await Promise.all([
                     element.animate([{ scale: "1" }, { scale: ".97", offset: .45 }, { scale: "1" }], { duration: 240, easing: "ease-in-out" }).finished,
-                    image?.animate([{ scale: "1" }, { scale: ".84", offset: .45 }, { scale: "1" }], { duration: 240, easing: "ease-in-out" }).finished,
+                    image?.animate([{ translate: "0 0" }, { translate: "0 3px", offset: .45 }, { translate: "0 0" }], { duration: 240, easing: "ease-in-out" }).finished,
                 ]);
             });
             await this.target.click();
