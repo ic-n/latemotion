@@ -42,7 +42,7 @@ export class VisualPointer {
   }
 
   async goto(selector: string): Promise<void> {
-    const locator = this.page.locator(selector).first();
+    const locator = this.page.locator(selector).filter({ visible: true }).first();
     await locator.scrollIntoViewIfNeeded();
     const bounds = await locator.boundingBox();
     if (!bounds) {
