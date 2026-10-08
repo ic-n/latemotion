@@ -1,7 +1,6 @@
 <img src="logo.png" width="120" title="Late Motion logo featuring geometric abstraction of intersection of L & M letters, cool that you did read that haha">
 
 <br/>
-<br/>
 
 # LateMotion
 
