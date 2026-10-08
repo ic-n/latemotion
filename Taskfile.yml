@@ -1,7 +1,12 @@
 version: "3"
 
 tasks:
+  run:
+    interactive: true
+    cmds:
+      - cmd: pnpm start
+
   check:
     cmds:
-      - cmd: echo "ok"
+      - cmd: pnpm check
     silent: true

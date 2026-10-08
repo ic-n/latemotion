@@ -1,5 +1,16 @@
 {
-	"devDependencies": {
-		"@playwright/test": "^1.64.0"
-	}
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^7.0.2"
+  }
 }
