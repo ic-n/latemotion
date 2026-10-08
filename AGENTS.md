@@ -5,11 +5,10 @@ LateMotion makes it easy to automate real websites with Playwright and add visua
 ## Product direction
 
 - Use TypeScript and Playwright. Users are expected to clone or fork the project and write TypeScript scenarios through a simple SDK. The scenario file extension is not decided yet.
-- Current scope is the runner, recorder, and supporting SDK. Authoring specific scenarios is outside this scope.
+- Current scope is the runner and supporting SDK. Authoring specific scenarios is outside this scope.
 - Launch a visible browser and allow time for manual preparation, including logins and CAPTCHAs. Pressing `p` while the browser is focused starts scenario playback.
 - Inject a purely visual cursor overlay using `assets/cursor.png`, `assets/pointer.png`, and the other supplied cursor assets. Support movement from a side of the viewport toward an element and switching to the pointer on hover. Playwright performs the actual clicks, navigation, and other interactions.
-- Record with Playwright's native video support at the best quality it provides. Match recording dimensions to the viewport to avoid default downscaling. Do not add artificial enhancement or runner annotations to the video. Await browser context closure so recordings are finalized. See `playwright.note.txt` for the supplied recording reference.
-- Whether saved recordings include manual preparation or only scenario playback remains undecided.
+- Video capture is handled manually with macOS screen recording tools. The runner does not capture video.
 - Keep the TUI simple, similar to a generic test runner: show the current scenario step, progress, and results.
 - Cover failure paths and write useful failure details locally to `./logs/trace.txt`; structured JSON is acceptable if it better suits the data.
 

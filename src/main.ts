@@ -5,7 +5,6 @@ import { defineScenario } from "./scenario.ts";
 import { VisualPointer } from "./visual-pointer.ts";
 
 const viewport = { width: 1280, height: 720 };
-const recordingsDirectory = "recordings";
 const tracePath = "logs/trace.txt";
 
 async function waitForPlaybackKey(context: BrowserContext, page: Page): Promise<void> {
@@ -28,17 +27,13 @@ async function run(): Promise<void> {
   let phase = "Launch browser";
   let currentStep = "";
   let browser: Browser | undefined;
-  let recordingContext: BrowserContext | undefined;
+  let context: BrowserContext | undefined;
   try {
     browser = await chromium.launch({ headless: false });
-    await mkdir(recordingsDirectory, { recursive: true });
-    recordingContext = await browser.newContext({
-      viewport,
-      recordVideo: { dir: recordingsDirectory, size: viewport },
-    });
-    const page = await recordingContext.newPage();
+    context = await browser.newContext({ viewport });
+    const page = await context.newPage();
     phase = "Manual preparation";
-    await waitForPlaybackKey(recordingContext, page);
+    await waitForPlaybackKey(context, page);
 
     const steps = defineScenario(scenario).steps;
     const pointer = new VisualPointer(page);
@@ -51,11 +46,10 @@ async function run(): Promise<void> {
       console.log(`✓ ${currentStep}`);
     }
 
-    phase = "Finalize recording";
-    const video = page.video();
-    await recordingContext.close();
-    recordingContext = undefined;
-    console.log(`Scenario passed. Video: ${video ? await video.path() : "unavailable"}`);
+    phase = "Close browser context";
+    await context.close();
+    context = undefined;
+    console.log("Scenario passed.");
   } catch (error) {
     await mkdir("logs", { recursive: true });
     const details = [
@@ -68,7 +62,7 @@ async function run(): Promise<void> {
     console.error(`Scenario failed. Details: ${tracePath}`);
     throw error;
   } finally {
-    await recordingContext?.close();
+    await context?.close();
     await browser?.close();
   }
 }
