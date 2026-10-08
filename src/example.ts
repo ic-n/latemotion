@@ -1,4 +1,10 @@
+import type { Page } from "@playwright/test";
 import type { Scenario } from "./scenario.ts";
+
+export async function ScenarioBefore(page: Page): Promise<void> {
+  await page.setViewportSize({ width: 414, height: 896 });
+  await page.goto("https://flipgo.tv");
+}
 
 export const scenario: Scenario = (r) => {
   r.wait(2000);
